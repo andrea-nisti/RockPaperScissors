@@ -1,17 +1,9 @@
 pragma solidity ^0.4.23;
 
-/**
- * The Owned contract ensures that only the creator (deployer) of a 
- * contract can perform certain tasks.
- */
-contract Owned {
-	address public owner = msg.sender;
-	event OwnerChanged(address indexed old, address indexed current);
-	modifier only_owner { require(msg.sender == owner); _; }
-	function setOwner(address _newOwner) only_owner public { OwnerChanged(owner, _newOwner); owner = _newOwner; }
-}
-
-
+import 'openzeppelin-solidity/contracts/ownership/Ownable.sol';
+import 'openzeppelin-solidity/contracts/lifecycle/Pausable.sol';
+import 'openzeppelin-solidity/contracts/lifecycle/Destructible.sol';
+import 'openzeppelin-solidity/contracts/math/Math.sol';
 
 /**
  You will create a smart contract named RockPaperScissors whereby:
@@ -32,8 +24,118 @@ Stretch goals:
 - let players bet their previous winnings.
 - how can you entice players to play, knowing that they may have their funding stuck in the contract if they faced an uncooperative player?
 */
-contract RockPaperScissors {
-	function RockPaperScissors () {
+contract RockPaperScissors is Ownable{
+	
+	mapping (address => uint) balances;
+	mapping (uint  => Game) games;
+
+	enum Hand {EMPTY, ROCK, PAPER, SCISSORS}
+	
+	struct Game {
+
+		bool doIExist;
+
+		address p1;
+		address p2;
+
+		bool p1Payed;
+		bool p2Payed;
+ 
+		uint buyIn;
+		bytes32 secretKey1;
+		bytes32 secretKey2;
+	}
+
+	//events
+
+	event LogGameCreated(uint _gameId, uint _buyIn);
+	//event LogPlayerEnrolled(uint _gameId, uint _buyIn);
+
+	constructor () {}	
+
+	function createGame (uint _gameId, uint _buyIn) external onlyOwner returns(bool res)   {
 		
-	}	
+		require(games[_gameId].doIExist == false,"Existing game");
+		emit LogGameCreated(_gameId,_buyIn);
+		games[_gameId].doIExist = true;
+		return true;
+	}
+
+	function enroll (uint8 _gameId, bytes32 _secretHand) external returns(bool res)  {
+		
+		require(games[_gameId].doIExist == true,"Game not existing");
+		require(!games[_gameId].p1Payed || !games[_gameId].p2Payed,"Ongoing Game");
+		require(balances[msg.sender] >= games[_gameId].buyIn);
+
+		balances[msg.sender] -= games[_gameId].buyIn;
+		
+		if(!games[_gameId].p1Payed){
+			games[_gameId].p1 = msg.sender;
+			games[_gameId].secretKey1 = _secretHand;
+			games[_gameId].p1Payed = true;
+		}
+		else if(!games[_gameId].p2Payed){
+			games[_gameId].p2 = msg.sender;
+			games[_gameId].secretKey2 = _secretHand;
+			games[_gameId].p1Payed = true;
+		}else {
+			revert();
+		}
+		return true;
+
+	}
+
+	function playGame (uint _gameId, uint _pass1, Hand _h1, uint _pass2, Hand _h2) returns(address winnerAddr, bool res) {
+		
+		require(games[_gameId].doIExist == true,"Game not existing");
+		require(games[_gameId].p1Payed && games[_gameId].p2Payed,"Wating for players");
+		require (_h1 != Hand.EMPTY && _h2 != Hand.EMPTY,"You should play");
+
+		bytes32 hash1 = keccak256(abi.encodePacked(_pass1, uint(_h1), games[_gameId].p1));
+		bytes32 hash2 = keccak256(abi.encodePacked(_pass2, uint(_h2), games[_gameId].p2));
+
+		require (hash1 == games[_gameId].secretKey1, "Player one is cheating...");
+		require (hash2 == games[_gameId].secretKey2, "Player two is cheating...");
+		
+		uint winner = compare(_h1, _h2);
+		if(winner == 1){
+			balances[games[_gameId].p1] += 2*games[_gameId].buyIn;
+			winnerAddr = games[_gameId].p1;
+		}else if (winner == 2){
+			balances[games[_gameId].p1] += 2*games[_gameId].buyIn;
+			winnerAddr = games[_gameId].p2;
+		}else{
+			balances[games[_gameId].p1] += games[_gameId].buyIn;
+			balances[games[_gameId].p2] += games[_gameId].buyIn;
+			winnerAddr = address(0);
+			res = false;
+		}
+		games[_gameId].doIExist = false;
+		res = true;
+
+	}
+
+	//1-rock ; 2-paper ; 3-scissors
+	function compare(Hand move1, Hand move2) internal pure returns (uint win) {
+        if (move1 == move2) return 0;
+        if ( (move1 == Hand.ROCK && move2==Hand.PAPER) || 
+             (move1 == Hand.PAPER && move2==Hand.SCISSORS) ||
+             (move1 == Hand.SCISSORS && move2==Hand.ROCK) ) return 2;
+        if ( (move1 == Hand.ROCK && move2==Hand.SCISSORS) || 
+             (move1 == Hand.PAPER && move2==Hand.ROCK) ||
+             (move1 == Hand.SCISSORS && move2==Hand.PAPER) ) return 1;
+         
+    }
+
+    function withdraw (uint amount2wd) external returns(bool res)  {
+       require(amount2wd > 0);
+       require(balances[msg.sender]>0);
+       require(amount2wd <= balances[msg.sender], "Insufficient Balance");       
+       
+       balances[msg.sender] -= amount2wd;
+       msg.sender.transfer(amount2wd);
+       return true;
+
+    }
+
 }
