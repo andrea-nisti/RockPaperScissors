@@ -1,0 +1,7 @@
+#Sublime stuff
+*.sublime-project
+*.sublime-workspace
+
+#Builds
+
+/build
