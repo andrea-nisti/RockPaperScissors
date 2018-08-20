@@ -24,7 +24,7 @@ Stretch goals:
 - let players bet their previous winnings.
 - how can you entice players to play, knowing that they may have their funding stuck in the contract if they faced an uncooperative player?
 */
-contract RockPaperScissors is Ownable{
+contract RockPaperScissors is Ownable, Pausable, Destructible{
 	
 	mapping (address => uint) balances;
 	mapping (uint  => Game) games;
