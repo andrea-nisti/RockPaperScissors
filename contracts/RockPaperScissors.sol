@@ -108,7 +108,7 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
 			balances[games[_gameId].p1] += games[_gameId].buyIn;
 			balances[games[_gameId].p2] += games[_gameId].buyIn;
 			winnerAddr = address(0);
-			res = false;
+			res = false;	
 		}
 		games[_gameId].doIExist = false;
 		res = true;
