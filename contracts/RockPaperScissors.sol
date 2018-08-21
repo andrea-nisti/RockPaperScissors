@@ -77,7 +77,7 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
 		else if(!games[_gameId].p2Payed){
 			games[_gameId].p2 = msg.sender;
 			games[_gameId].secretKey2 = _secretHand;
-			games[_gameId].p1Payed = true;
+			games[_gameId].p2Payed = true;
 		}else {
 			revert();
 		}
@@ -138,4 +138,10 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
 
     }
 
+    //Fallback fun
+    function () public payable  {
+    	require (msg.value > 0 , "You should send some ether");
+    	balances[msg.sender] += msg.value;
+    }
+    
 }
