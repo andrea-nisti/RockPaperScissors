@@ -137,6 +137,10 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
        return true;
 
     }
+    //Helpers
+    function computeHash(uint ps, uint m, address adr) public pure returns(bytes32){
+        return keccak256(abi.encodePacked(ps,m,adr));
+    }
 
     //Fallback fun
     function () public payable  {
