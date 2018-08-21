@@ -51,7 +51,7 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
 	event LogGameCreated(uint _gameId, uint _buyIn);
 	//event LogPlayerEnrolled(uint _gameId, uint _buyIn);
 
-	constructor () {}	
+	constructor () public {}	
 
 	function createGame (uint _gameId, uint _buyIn) external onlyOwner returns(bool res)   {
 		
@@ -85,7 +85,7 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
 
 	}
 
-	function playGame (uint _gameId, uint _pass1, Hand _h1, uint _pass2, Hand _h2) returns(address winnerAddr, bool res) {
+	function playGame (uint _gameId, uint _pass1, Hand _h1, uint _pass2, Hand _h2) external returns(address winnerAddr, bool res) {
 		
 		require(games[_gameId].doIExist == true,"Game not existing");
 		require(games[_gameId].p1Payed && games[_gameId].p2Payed,"Wating for players");
@@ -141,6 +141,11 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
     function computeHash(uint ps, uint m, address adr) public pure returns(bytes32){
         return keccak256(abi.encodePacked(ps,m,adr));
     }
+
+    function checkBalance (address addr) public view returns(uint bal)  {
+    	return balances[addr];
+    }
+    
 
     //Fallback fun
     function () public payable  {

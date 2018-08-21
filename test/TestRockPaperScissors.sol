@@ -14,7 +14,7 @@ contract TestRockPaperScissors {
         testContract = new RPSExposed();
     }
 
-    function testCompare () returns(bool r) {
+    function testCompare () public returns(bool r) {
     	
     	// Rock:
     	uint hand1 = uint(testContract.rock());
