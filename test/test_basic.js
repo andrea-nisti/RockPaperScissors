@@ -1,4 +1,4 @@
-const RockPaperScissors = artifacts.require("./RPSExposed.sol");
+const RockPaperScissors = artifacts.require("./RockPaperScissors.sol");
 //const BigNumber = require('bignumber.js');
 
 contract('RockPaperScissors test', accounts => {
@@ -20,7 +20,7 @@ contract('RockPaperScissors test', accounts => {
         let amount2 = 1;
         
         // Fallback for accounting
-        return instance.sendEtherTest.sendTransaction(accounts[0],{ from: accounts[0], value: 500000000000000000000})
+        return instance.sendTransaction(accounts[0],{ from: accounts[0], value: 500000000000000000000})
         .then(txObj => 
             {
                 console.log(web3.eth.getBalance(instance.address));
