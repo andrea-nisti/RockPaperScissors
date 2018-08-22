@@ -26,15 +26,15 @@ contract('RockPaperScissors test', accounts => {
         .then(txObj => 
             {
                 console.log(web3.eth.getBalance(instance.address));
-                return instance.checkBalance.call(web3.eth.accounts[0]);
+                return instance.checkBalance.call(accounts[0]);
             })
         .then( res => {
                 balance0 = res;
-                return instance.sendTransaction({ from: web3.eth.accounts[1], value: web3.toWei(amount2,"ether")});
+                return instance.sendTransaction({ from: accounts[1], value: web3.toWei(amount2,"ether")});
             })
         .then( txObj => {
                 web3.eth.getBalance(instance.address)
-                return instance.checkBalance.call(web3.eth.accounts[1]);
+                return instance.checkBalance.call(accounts[1]);
             })
         .then( res => {
                 balance1 = res;
