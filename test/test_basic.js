@@ -7,11 +7,7 @@ contract('RockPaperScissors test', accounts => {
   // Will show ["0x1c25cc6a9f326ac277ce6879b03c4fd0596e10eb", "0x991b2246c8ed92a63ae64c9b910902f55350cd13", "0x258a69adcfb68ad70182bb351c7fa0b0e4b4b4cd"]
   // unit tests come here
     let instance;
-    /*
-    beforeEach('setup contract for each test',function () {
-      return RockPaperScissors.new({from: web3.eth.accounts[0]}).then(_instance => instance = _instance)}
-    );
-*/
+
     beforeEach(async function() {
         instance = await RockPaperScissors.new({ from: accounts[0] });
     });
@@ -24,11 +20,11 @@ contract('RockPaperScissors test', accounts => {
         let amount2 = 1;
         
         // Fallback for accounting
-        instance.sendEtherTest.sendTransaction(web3.eth.accounts[0],{ from: web3.eth.accounts[0], value: 100000000000000000000})
+        return instance.sendEtherTest.sendTransaction(accounts[0],{ from: accounts[0], value: 500000000000000000000})
         .then(txObj => 
             {
                 console.log(web3.eth.getBalance(instance.address));
-                return instance.checkBalance.call(web3.eth.accounts[0]);
+                return instance.checkBalance.call(accounts[0]);
             })
         .then( res => console.log(res) );
         //instance.sendTransaction({ from: web3.eth.accounts[1], value: web3.toWei(amount2,"ether")})
