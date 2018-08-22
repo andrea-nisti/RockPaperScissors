@@ -18,7 +18,7 @@ contract RPSExposed is RockPaperScissors {
     }
 
     //For test purposes
-    function sendEtherTest (address sender) returns(bool res)  {
+    function sendEtherTest (address sender) external payable returns(bool res)  {
     	require (msg.value > 0);
     	balances[sender] += msg.value;
     }
