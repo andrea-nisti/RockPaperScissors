@@ -25,7 +25,8 @@ contract('RockPaperScissors test', accounts => {
         return instance.sendTransaction({ from: accounts[0], value: web3.toWei(amount1,"ether")})
         .then(txObj => 
             {
-                console.log(web3.eth.getBalance(instance.address));
+                //Waiting for promisification
+                //console.log(web3.eth.getBalance(instance.address));
                 return instance.checkBalance.call(accounts[0]);
             })
         .then( res => {
@@ -33,7 +34,8 @@ contract('RockPaperScissors test', accounts => {
                 return instance.sendTransaction({ from: accounts[1], value: web3.toWei(amount2,"ether")});
             })
         .then( txObj => {
-                web3.eth.getBalance(instance.address)
+                //Waiting for promisification
+                //web3.eth.getBalance(instance.address)
                 return instance.checkBalance.call(accounts[1]);
             })
         .then( res => {
