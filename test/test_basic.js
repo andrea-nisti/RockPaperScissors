@@ -1,4 +1,4 @@
-const RockPaperScissors = artifacts.require("./RockPaperScissors.sol");
+const RockPaperScissors = artifacts.require("./RPSExposed.sol");
 //const BigNumber = require('bignumber.js');
 
 contract('RockPaperScissors test', accounts => {
@@ -20,60 +20,31 @@ contract('RockPaperScissors test', accounts => {
         let amount2 = 1;
         
         // Fallback for accounting
-        return instance.sendTransaction(accounts[0],{ from: accounts[0], value: 500000000000000000000})
+        let balance0;
+        let balance1;
+        return instance.sendTransaction({ from: accounts[0], value: web3.toWei(amount1,"ether")})
         .then(txObj => 
             {
                 console.log(web3.eth.getBalance(instance.address));
-                return instance.checkBalance.call(accounts[0]);
+                return instance.checkBalance.call(web3.eth.accounts[0]);
             })
-        .then( res => console.log(res) );
-        //instance.sendTransaction({ from: web3.eth.accounts[1], value: web3.toWei(amount2,"ether")})
-        
-        let balance0;
-        let error;
-/*
-        console.log(web3.eth.getBalance(instance.address));
-        instance.checkBalance.call(web3.eth.accounts[0]).then(res => {
-            console.log("Debug....");
-            console.log(res);}
-            //assert.equal(res.toString(10), web3.toWei(amount1,"ether"), "should equal input for account0");
-            return instance.checkBalance.call(web3.eth.accounts[1]);
-        }).then(res2 => {
-            assert.equal(res2.toString(10), web3.toWei(amount2,"ether"), "should equal input for account1");
-        });
-
-*/
+        .then( res => {
+                balance0 = res;
+                return instance.sendTransaction({ from: web3.eth.accounts[1], value: web3.toWei(amount2,"ether")});
+            })
+        .then( txObj => {
+                web3.eth.getBalance(instance.address)
+                return instance.checkBalance.call(web3.eth.accounts[1]);
+            })
+        .then( res => {
+                balance1 = res;
+            })
+        .then( () => {
+                console.log(balance0);
+                console.log(balance1);
+                assert.equal(balance0, web3.toWei(amount1,"ether"), "should equal input for account0");
+                assert.equal(balance1, web3.toWei(amount2,"ether"), "should equal input for account1");
+            });
     });
-        /*
-        .then(success => {
-
-            
-            //assert.isTrue(success, "failed to do something");
-            //return instance.doSomething(arg1, { from: accounts[0] });
-            
-            // Game creation
-
-        })
-        .then(
-            
-            txObj => {
-            
-            //assert.strictEqual(txObj.logs.length, 1, "Only one event");
-            //return instance.getSomethingElse.call();
-            
-
-            //Enrollement
-        })
-        .then(
-
-            resultValue => {
-            //assert.equal(resultValue.toString(10), "3", "there should be exactly 3 things at this stage");
-            // Do not return anything on the last callback or it will believe there is an error.
-            
-
-            //Play game
-        }).then( () => {
-                //Balance verificaton
-        });
-        */
+        
 });
