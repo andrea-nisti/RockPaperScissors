@@ -2,6 +2,7 @@
 *.sublime-project
 *.sublime-workspace
 *-workspace
+.vscode/settings.json
 
 #Node tuff
 /node*
@@ -11,3 +12,4 @@
 
 #Linux
 *~
+
