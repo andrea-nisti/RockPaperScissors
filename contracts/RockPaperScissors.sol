@@ -92,7 +92,7 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
     //Play the game nd find out who's the lucky winner, Draw is not managed now -> game closes, you lose gas ¯\_( '_')_/¯
     function playGame (uint gameId, uint pass1, Hand h1) external returns(address winnerAddr, bool res) {
         
-        require(games[gameId].p2 == address(0),"Existing game");
+        require(games[gameId].p2 != address(0),"Existing game");
         require(h1 != Hand.EMPTY, "You cannot play an empty hand, sorry");
         
         bytes32 hash1 = computeHash(pass1, h1);
@@ -123,12 +123,14 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
     //1-rock ; 2-paper ; 3-scissors
     function compare(Hand move1, Hand move2) internal pure returns (uint win) {
         if (move1 == move2) return 0;
-        if ( (move1 == Hand.ROCK && move2==Hand.PAPER) ||
-             (move1 == Hand.PAPER && move2==Hand.SCISSORS)||
-             (move1 == Hand.SCISSORS && move2==Hand.ROCK) ) return 2;
-        if ( (move1 == Hand.ROCK && move2==Hand.SCISSORS) ||
-             (move1 == Hand.PAPER && move2==Hand.ROCK) ||
-             (move1 == Hand.SCISSORS && move2==Hand.PAPER) ) return 1;
+        
+        if ((move1 == Hand.ROCK && move2==Hand.PAPER) ||
+            (move1 == Hand.PAPER && move2==Hand.SCISSORS) ||
+            (move1 == Hand.SCISSORS && move2==Hand.ROCK) ) return 2;
+        
+        if ((move1 == Hand.ROCK && move2==Hand.SCISSORS)||
+            (move1 == Hand.PAPER && move2==Hand.ROCK)||
+            (move1 == Hand.SCISSORS && move2==Hand.PAPER)) return 1;
          
     }
 
