@@ -1,9 +1,9 @@
 pragma solidity ^0.4.23;
 
-import "node_modules/openzeppelin-solidity/contracts/ownership/Ownable.sol";
-import "node_modules/openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
-import "node_modules/openzeppelin-solidity/contracts/lifecycle/Destructible.sol";
-import "node_modules/openzeppelin-solidity/contracts/math/Math.sol";
+import "../node_modules/openzeppelin-solidity/contracts/ownership/Ownable.sol";
+import "../node_modules/openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
+import "../node_modules/openzeppelin-solidity/contracts/lifecycle/Destructible.sol";
+import "../node_modules/openzeppelin-solidity/contracts/math/Math.sol";
 
 /**
  You will create a smart contract named RockPaperScissors whereby:
@@ -38,6 +38,7 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
         Hand move2;
         uint buyIn;
         bytes32 secretKey1;
+        uint deadline;
 
     }
 
@@ -50,7 +51,7 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
     constructor () public {}    
 
     //Create a game if it is not there
-    function readyPlayer1 (uint gameId, uint _buyIn, bytes32 secret) external returns(bool res)   {
+    function readyPlayer1 (uint gameId, uint _buyIn, bytes32 secret,uint duration) external whenNotPaused returns(bool res)   {
         
         require(games[gameId].p1 == address(0),"Existing game");
         require(balances[msg.sender] >= games[gameId].buyIn, "Not enough balance");
@@ -60,7 +61,8 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
             p2 : address(0),
             move2 : Hand.EMPTY,
             buyIn : _buyIn,
-            secretKey1 : secret
+            secretKey1 : secret,
+            deadline : now + duration
         });
         balances[msg.sender] -= _buyIn;
         
@@ -70,10 +72,11 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
 
     //Enroll to the game, 
     //hand is clear but who cares now -> We could hash the move in the future for hardcore players
-    function readyPlayer2(uint gameId, Hand move2) external returns(bool res)  {
+    function readyPlayer2(uint gameId, Hand move2) external whenNotPaused returns(bool res)  {
         
         address tPlayer1 = games[gameId].p1;
         require(tPlayer1 != address(0), "Game not existing");
+        require(!isExpired(gameId), "Game has expired");
         //Now we should have a buy in, save some gas
         uint tBuyIn = games[gameId].buyIn;
         require(msg.sender != tPlayer1, "You can't play alone");
@@ -89,18 +92,19 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
         return true;
     }
 
-    //Play the game nd find out who's the lucky winner, Draw is not managed now -> game closes, you lose gas ¯\_( '_')_/¯
-    function playGame (uint gameId, uint pass1, Hand h1) external returns(address winnerAddr, bool res) {
+    //Play the game and find out who's the lucky winner, Draw is not managed now -> game closes, you lose gas ¯\_( '_')_/¯
+    function playGame (uint gameId, uint pass1, Hand move1) external whenNotPaused returns(bool res, address winnerAddr) {
         
-        require(games[gameId].p2 != address(0),"Existing game");
-        require(h1 != Hand.EMPTY, "You cannot play an empty hand, sorry");
+        require(games[gameId].p2 != address(0),"Empty game");
+        require(!isExpired(gameId), "Game has expired");
+        require(move1 != Hand.EMPTY, "You cannot play an empty hand, sorry");
         
-        bytes32 hash1 = computeHash(pass1, h1);
+        bytes32 hash1 = computeHash(pass1, move1);
         require (hash1 == games[gameId].secretKey1, "Player one is cheating...");
         
         uint tBuyIn = games[gameId].buyIn;
-        Hand h2 = games[gameId].move2;
-        uint winner = compare(h1, h2);
+        Hand move2 = games[gameId].move2; 
+        uint winner = compare(move1, move2);
         
         //Should I save gas here by saving addresses? It is an if block so it shouldn't matters
         if(winner == 1){
@@ -114,7 +118,7 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
             balances[games[gameId].p2] += tBuyIn;
             winnerAddr = address(0); 
         }
-        emit LogPlayedGame(gameId, pass1, h1, h2, winnerAddr);
+        emit LogPlayedGame(gameId, pass1, move1, move2, winnerAddr);
         delete games[gameId];
         res = true;
 
@@ -124,14 +128,13 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
     function compare(Hand move1, Hand move2) internal pure returns (uint win) {
         if (move1 == move2) return 0;
         
-        if ((move1 == Hand.ROCK && move2==Hand.PAPER) ||
-            (move1 == Hand.PAPER && move2==Hand.SCISSORS) ||
-            (move1 == Hand.SCISSORS && move2==Hand.ROCK) ) return 2;
-        
         if ((move1 == Hand.ROCK && move2==Hand.SCISSORS)||
             (move1 == Hand.PAPER && move2==Hand.ROCK)||
             (move1 == Hand.SCISSORS && move2==Hand.PAPER)) return 1;
-         
+        
+        if ((move1 == Hand.ROCK && move2==Hand.PAPER) ||
+            (move1 == Hand.PAPER && move2==Hand.SCISSORS) ||
+            (move1 == Hand.SCISSORS && move2==Hand.ROCK) ) return 2;
     }
 
     function withdraw (uint amount2wd) external returns(bool res)  {
@@ -149,9 +152,26 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
     function computeHash(uint pswrd, Hand move) public pure returns(bytes32){
         return keccak256(abi.encodePacked(pswrd,move));
     }
-    //Usefull for remix
+    //Useful for remix
     function checkBalance (address addr) public view returns(uint bal)  {
         return balances[addr];
+    }
+    //We compare with block time, not really precise but it's ok for now
+    function isExpired(uint gameId) internal view returns(bool res){
+        return now >= games[gameId].deadline;
+    }
+
+    //Accounting : readyPlayer1() -> readyPlayer2() -> Game expires -> p1 calls giveMeMoneyBack() -> p1 calls withdraw / same for p2
+    function giveMeMoneyBack (uint gameId) external returns(bool res){
+        
+        require(games[gameId].secretKey1 != bytes32(0), "Empty game");
+        require (isExpired(gameId), "You can claim your bet only on expired games");
+        address p1 = games[gameId].p1;
+        address p2 = games[gameId].p2;
+        
+        /* UNDER CONSTRUCTION */
+
+        return true;        
     }
     
     //Fallback fun
