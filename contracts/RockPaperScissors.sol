@@ -25,98 +25,97 @@ Stretch goals:
 - how can you entice players to play, knowing that they may have their funding stuck in the contract if they faced an uncooperative player?
 */
 contract RockPaperScissors is Ownable, Pausable, Destructible{
-	
-	mapping (address => uint) balances;
-	mapping (uint  => Game) games;
+    
+    mapping (address => uint) public balances;
+    mapping (uint  => Game)   public games;
 
-	enum Hand {EMPTY, ROCK, PAPER, SCISSORS}
-	
-	struct Game {
+    enum Hand {EMPTY, ROCK, PAPER, SCISSORS}
+    
+    struct Game {
 
-		bool doIExist;
+        bool doIExist;
 
-		address p1;
-		address p2;
+        address p1;
+        address p2;
 
-		bool p1Payed;
-		bool p2Payed;
+        bool p1Payed;
+        bool p2Payed;
  
-		uint buyIn;
-		bytes32 secretKey1;
-		bytes32 secretKey2;
-	}
+        uint buyIn;
+        bytes32 secretKey1;
+        bytes32 secretKey2;
+    }
 
-	//events
+    //events
 
-	event LogGameCreated(uint _gameId, uint _buyIn);
-	//event LogPlayerEnrolled(uint _gameId, uint _buyIn);
+    event LogGameCreated(uint _gameId, uint _buyIn);
+    //event LogPlayerEnrolled(uint _gameId, uint _buyIn);
 
-	constructor () public {}	
+    constructor () public {}    
 
-	function createGame (uint _gameId, uint _buyIn) external onlyOwner returns(bool res)   {
-		
-		require(games[_gameId].doIExist == false,"Existing game");
-		emit LogGameCreated(_gameId,_buyIn);
-		games[_gameId].doIExist = true;
-		return true;
-	}
+    function createGame (uint _gameId, uint _buyIn) external onlyOwner returns(bool res)   {
+        
+        require(games[_gameId].doIExist == false,"Existing game");
+        games[_gameId].doIExist = true;
+        emit LogGameCreated(_gameId,_buyIn);
+        return true;
+    }
 
-	function enroll (uint8 _gameId, bytes32 _secretHand) external returns(bool res)  {
-		
-		require(games[_gameId].doIExist == true,"Game not existing");
-		require(!games[_gameId].p1Payed || !games[_gameId].p2Payed,"Ongoing Game");
-		require(balances[msg.sender] >= games[_gameId].buyIn);
+    function enroll (uint _gameId, bytes32 _secretHand) external returns(bool res)  {
+        
+        require(games[_gameId].doIExist,"Game not existing");
+        require(!games[_gameId].p1Payed || !games[_gameId].p2Payed,"Ongoing Game");
+        require(balances[msg.sender] >= games[_gameId].buyIn);
 
-		balances[msg.sender] -= games[_gameId].buyIn;
-		
-		if(!games[_gameId].p1Payed){
-			games[_gameId].p1 = msg.sender;
-			games[_gameId].secretKey1 = _secretHand;
-			games[_gameId].p1Payed = true;
-		}
-		else if(!games[_gameId].p2Payed){
-			games[_gameId].p2 = msg.sender;
-			games[_gameId].secretKey2 = _secretHand;
-			games[_gameId].p2Payed = true;
-		}else {
-			revert();
-		}
-		return true;
+        balances[msg.sender] -= games[_gameId].buyIn;
+        
+        if(!games[_gameId].p1Payed){
+            games[_gameId].p1 = msg.sender;
+            games[_gameId].secretKey1 = _secretHand;
+            games[_gameId].p1Payed = true;
+        }else if(!games[_gameId].p2Payed){
+            games[_gameId].p2 = msg.sender;
+            games[_gameId].secretKey2 = _secretHand;
+            games[_gameId].p2Payed = true;
+        }else {
+            revert();
+        }
+        return true;
 
-	}
+    }
 
-	function playGame (uint _gameId, uint _pass1, Hand _h1, uint _pass2, Hand _h2) external returns(address winnerAddr, bool res) {
-		
-		require(games[_gameId].doIExist == true,"Game not existing");
-		require(games[_gameId].p1Payed && games[_gameId].p2Payed,"Wating for players");
-		require (_h1 != Hand.EMPTY && _h2 != Hand.EMPTY,"You should play");
+    function playGame (uint _gameId, uint _pass1, Hand _h1, uint _pass2, Hand _h2) external returns(address winnerAddr, bool res) {
+        
+        require(games[_gameId].doIExist == true,"Game not existing");
+        require(games[_gameId].p1Payed && games[_gameId].p2Payed,"Wating for players");
+        require (_h1 != Hand.EMPTY && _h2 != Hand.EMPTY,"You should play");
+        
+        bytes32 hash1 = keccak256(abi.encodePacked(_pass1, uint(_h1), games[_gameId].p1));
+        bytes32 hash2 = keccak256(abi.encodePacked(_pass2, uint(_h2), games[_gameId].p2));
 
-		bytes32 hash1 = keccak256(abi.encodePacked(_pass1, uint(_h1), games[_gameId].p1));
-		bytes32 hash2 = keccak256(abi.encodePacked(_pass2, uint(_h2), games[_gameId].p2));
+        require (hash1 == games[_gameId].secretKey1, "Player one is cheating...");
+        require (hash2 == games[_gameId].secretKey2, "Player two is cheating...");
+        
+        uint winner = compare(_h1, _h2);
+        if(winner == 1){
+            balances[games[_gameId].p1] += 2*games[_gameId].buyIn;
+            winnerAddr = games[_gameId].p1;
+        }else if (winner == 2){
+            balances[games[_gameId].p1] += 2*games[_gameId].buyIn;
+            winnerAddr = games[_gameId].p2;
+        }else{
+            balances[games[_gameId].p1] += games[_gameId].buyIn;
+            balances[games[_gameId].p2] += games[_gameId].buyIn;
+            winnerAddr = address(0);
+            res = false;    
+        }
+        delete games[_gameId];
+        res = true;
 
-		require (hash1 == games[_gameId].secretKey1, "Player one is cheating...");
-		require (hash2 == games[_gameId].secretKey2, "Player two is cheating...");
-		
-		uint winner = compare(_h1, _h2);
-		if(winner == 1){
-			balances[games[_gameId].p1] += 2*games[_gameId].buyIn;
-			winnerAddr = games[_gameId].p1;
-		}else if (winner == 2){
-			balances[games[_gameId].p1] += 2*games[_gameId].buyIn;
-			winnerAddr = games[_gameId].p2;
-		}else{
-			balances[games[_gameId].p1] += games[_gameId].buyIn;
-			balances[games[_gameId].p2] += games[_gameId].buyIn;
-			winnerAddr = address(0);
-			res = false;	
-		}
-		games[_gameId].doIExist = false;
-		res = true;
+    }
 
-	}
-
-	//1-rock ; 2-paper ; 3-scissors
-	function compare(Hand move1, Hand move2) internal pure returns (uint win) {
+    //1-rock ; 2-paper ; 3-scissors
+    function compare(Hand move1, Hand move2) internal pure returns (uint win) {
         if (move1 == move2) return 0;
         if ( (move1 == Hand.ROCK && move2==Hand.PAPER) || 
              (move1 == Hand.PAPER && move2==Hand.SCISSORS) ||
@@ -143,14 +142,14 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
     }
 
     function checkBalance (address addr) public view returns(uint bal)  {
-    	return balances[addr];
+        return balances[addr];
     }
     
 
     //Fallback fun
     function () public payable  {
-    	require (msg.value > 0 , "You should send some ether");
-    	balances[msg.sender] += msg.value;
+        require (msg.value > 0 , "You should send some ether");
+        balances[msg.sender] += msg.value;
     }
     
 }

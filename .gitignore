@@ -1,6 +1,7 @@
-#Sublime stuff
+#IDE stuff
 *.sublime-project
 *.sublime-workspace
+*-workspace
 
 #Node tuff
 /node*
