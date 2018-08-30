@@ -57,12 +57,14 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
 
         games[gameId] = Game({
             p1 : msg.sender,
-            secretKey1 : secret,
-            buyIn : _buyIn
+            p2 : address(0),
+            move2 : Hand.EMPTY,
+            buyIn : _buyIn,
+            secretKey1 : secret
         });
         balances[msg.sender] -= _buyIn;
         
-        emit LogGameCreated(gameId,_buyIn,secret);
+        emit LogGameCreated(gameId,_buyIn,secret,msg.sender);
         return true;
     }
 
