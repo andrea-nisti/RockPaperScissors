@@ -73,11 +73,12 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
     //Enroll to the game, 
     //hand is clear but who cares now -> We could hash the move in the future for hardcore players
     function readyPlayer2(uint gameId, Hand move2) external whenNotPaused returns(bool res)  {
-        
+
         address tPlayer1 = games[gameId].p1;
         require(tPlayer1 != address(0), "Game not existing");
         require(msg.sender == games[gameId].p2, "This game is not for you");
         require(!isExpired(gameId), "Game has expired");
+
         //Now we should have a buy in, save some gas
         uint tBuyIn = games[gameId].buyIn;
         require(msg.sender != tPlayer1, "You can't play alone");
