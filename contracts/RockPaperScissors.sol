@@ -51,14 +51,14 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
     constructor () public {}    
 
     //Create a game if it is not there
-    function readyPlayer1 (uint gameId, uint _buyIn, bytes32 secret,uint duration) external whenNotPaused returns(bool res)   {
+    function readyPlayer1 (uint gameId, address player2 , uint _buyIn, bytes32 secret,uint duration) external whenNotPaused returns(bool res)   {
         
         require(games[gameId].p1 == address(0),"Existing game");
         require(balances[msg.sender] >= games[gameId].buyIn, "Not enough balance");
 
         games[gameId] = Game({
             p1 : msg.sender,
-            p2 : address(0),
+            p2 : player2,
             move2 : Hand.EMPTY,
             buyIn : _buyIn,
             secretKey1 : secret,
@@ -84,7 +84,6 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
         require(move2 != Hand.EMPTY, "You cannot play an empty hand, sorry");
         
         //Fill missing members
-        games[gameId].p2 = msg.sender;
         games[gameId].move2 = move2;
         balances[msg.sender] -= tBuyIn;
         
