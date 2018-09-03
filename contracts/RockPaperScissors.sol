@@ -43,7 +43,7 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
     }
 
     //events
-    event LogGameCreated(uint gameId, uint buyIn, bytes32 secret, address player1);
+    event LogGameCreated(uint gameId, uint buyIn, bytes32 secret, address player1, address player2);
     event LogPlayer2Enrolled(uint gameId, Hand move, address player2);
     event LogPlayedGame(uint gameId, uint pass1, Hand move1, Hand move2, address winner);
     event LogNewWithdraw(uint amount, address who);
@@ -51,7 +51,7 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
     constructor () public {}    
 
     //Create a game if it is not there
-    function readyPlayer1 (uint gameId, address player2 , uint _buyIn, bytes32 secret,uint duration) external whenNotPaused returns(bool res)   {
+    function readyPlayer1 (uint gameId, address player2, uint _buyIn, bytes32 secret,uint duration) external whenNotPaused returns(bool res)   {
         
         require(games[gameId].p1 == address(0),"Existing game");
         require(balances[msg.sender] >= games[gameId].buyIn, "Not enough balance");
@@ -66,7 +66,7 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
         });
         balances[msg.sender] -= _buyIn;
         
-        emit LogGameCreated(gameId,_buyIn,secret,msg.sender);
+        emit LogGameCreated(gameId,_buyIn,secret,msg.sender, player2);
         return true;
     }
 
@@ -76,6 +76,7 @@ contract RockPaperScissors is Ownable, Pausable, Destructible{
         
         address tPlayer1 = games[gameId].p1;
         require(tPlayer1 != address(0), "Game not existing");
+        require(msg.sender == games[gameId].p2, "This game is not for you");
         require(!isExpired(gameId), "Game has expired");
         //Now we should have a buy in, save some gas
         uint tBuyIn = games[gameId].buyIn;
